@@ -17,7 +17,6 @@ app.use(
 
 async function LoadModels() {
   // Load the models
-  // __dirname gives the root directory of the server
   await faceapi.nets.faceRecognitionNet.loadFromDisk(__dirname + "/models");
   await faceapi.nets.faceLandmark68Net.loadFromDisk(__dirname + "/models");
   await faceapi.nets.ssdMobilenetv1.loadFromDisk(__dirname + "/models");
@@ -42,19 +41,13 @@ const faceSchema = new mongoose.Schema({
 const FaceModel = mongoose.model("Face", faceSchema);
 
 
-async function uploadLabeledImages(images, label) {
+async function uploadLabeledImages(image, label) {
   try {
-    let counter = 0;
     const descriptions = [];
-    // Loop through the images
-    for (let i = 0; i < images.length; i++) {
-      const img = await canvas.loadImage(images[i]);
-      counter = (i / images.length) * 100;
-      console.log(`Progress = ${counter}%`);
-      // Read each face and save the face descriptions in the descriptions array
+      const img = await canvas.loadImage(image);
+      // Read face and save the face descriptions in the descriptions array
       const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
       descriptions.push(detections.descriptor);
-    }
 
     // Create a new face document with the given label and save it in DB
     const createFace = new FaceModel({
@@ -70,7 +63,7 @@ async function uploadLabeledImages(images, label) {
 }
 
 async function getDescriptorsFromDB(image) {
-  // Get all the face data from mongodb and loop through each of them to read the data// add your mongo key instead of the ***
+  // Get all the face data from mongodb and loop through each of them to read the data
   let faces = await FaceModel.find();// For SQL we can use  ===> select * from face-table 
   console.log(faces);
   for (i = 0; i < faces.length; i++) {
@@ -106,7 +99,7 @@ async function getDescriptorsFromDB(image) {
 app.post("/post-face",async (req,res)=>{
     const File1 = req.files.File1.tempFilePath
     const label = req.body.label
-    let result = await uploadLabeledImages([File1], label);
+    let result = await uploadLabeledImages(File1, label);
     if(result){
         
         res.json({message:"Face data stored successfully"})
